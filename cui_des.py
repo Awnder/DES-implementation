@@ -41,10 +41,9 @@ def _nsplit(data, split_size=64):
     ''' Splits data into a list where each len(element) == split_size.
         The last element does not necessarily have the max amount of characters 
     '''
-    split_data = []
     for i in range(0, len(data), split_size):
-      split_data.append(data[i:i+split_size])
-    return split_data
+      stop = i+split_size
+      yield data[i:stop]
 
 def _hex_print(block, length=16):
     ''' gets a list of binary digits and prints the hex representation, used tallman's code '''
@@ -102,7 +101,20 @@ def _generate_subkeys(key):
     return subkeys
 
 def _permute(block, table):
-    return [block[i-1] for i in table] # need to i-1 as permutation keys are 1-indexed
+    return [block[i-1] for i in table] # need to i-1 as permutation keys are 1-indexed right now
+
+def _lshift(sequence: bytes, n: int):
+    seq_bits = _bytes_to_bit_array(sequence)
+    # takes part from the beginning and puts it on the end of the list
+    seq_bits = seq_bits[n:] + seq_bits[:n]
+    return _bit_array_to_bytes(sequence)
+
+def _xor(x: bytes, y: bytes) -> bytes:
+    # x_bitarray = _bytes_to_bit_array(x)
+    # y_bitarray = _bytes_to_bit_array(y)
+    bitarray = ''.join([str(a^b) for a,b in zip(x,y)])
+    print(bitarray.encode())
+    return bitarray
 
 def _feistel_round(L, R, subkey):
     ''' XORs the Left 32bits and Right 32bits together after permuting the right side. Used gpt-4o to write '''
@@ -187,8 +199,16 @@ def run_unit_tests():
       t11 = _bit_array_to_bytes([1,0,1,0,0,1,0,1])
       t12 = _bit_array_to_bytes([1,1,1,1,1,1,1,1])
       t13 = _nsplit(b'1111222233334444',4)
+      t13 = [t for t in t13]
       t14 = _nsplit(b'ABCDEFGHIJKLMN', 3)
+      t14 = [t for t in t14]
       t15 = _nsplit(b'THE CODE BOOK BY SINGH', 5)
+      t15 = [t for t in t15]
+      t16 = _xor(b'1111', b'0101')
+      print('xor:',t16)
+      t16 = _xor(b'1010', b'0101')
+      print('xor:',t16)
+
 
       assert t1 == b'CSC428\x02\x02', "Unit test #1 failed: _add_padding(b'CSC428')"
       assert t2 == b'TALLMAN\x01', 'failed t2'
