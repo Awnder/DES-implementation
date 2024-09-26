@@ -82,18 +82,12 @@ def _generate_subkeys(key):
 def _permute(block, table):
     return [block[i-1] for i in table] # need to i-1 as permutation keys are 1-indexed right now
 
-def _lshift(sequence: bytes, n: int):
-    seq_bits = _bytes_to_bit_array(sequence)
-    # takes part from the beginning and puts it on the end of the list
-    seq_bits = seq_bits[n:] + seq_bits[:n]
-    return _bit_array_to_bytes(sequence)
+def _lshift(sequence: list, n: int):
+    sequence = sequence[n:] + sequence[:n]
+    return sequence
 
-def _xor(x: bytes, y: bytes) -> bytes:
-    # x_bitarray = _bytes_to_bit_array(x)
-    # y_bitarray = _bytes_to_bit_array(y)
-    bitarray = ''.join([str(a^b) for a,b in zip(x,y)])
-    print(bitarray.encode())
-    return bitarray
+def _xor(x: list, y: list):
+    return [a^b for a,b in zip(x,y)]
 
 def _feistel_round(L, R, subkey):
     ''' XORs the Left 32bits and Right 32bits together after permuting the right side. Used gpt-4o to write '''
@@ -164,9 +158,10 @@ def run_unit_tests():
       t15 = [t for t in t15]
       t16 = _xor(b'1111', b'0101')
       print('xor:',t16)
-      t16 = _xor(b'1010', b'0101')
-      print('xor:',t16)
-
+      t17 = _lshift([1,0,1,1], 1)
+      print('lshift:',t17)
+      t17 = _lshift(t17, 1)
+      print('lshift:',t17)
 
       assert t1 == b'CSC428\x02\x02', "Unit test #1 failed: _add_padding(b'CSC428')"
       assert t2 == b'TALLMAN\x01', 'failed t2'
