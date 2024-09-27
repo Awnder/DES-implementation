@@ -56,7 +56,7 @@ def _hex_print(block, length=16):
     binary = int(''.join(s),2)
     print(hex(binary)[2:].zfill(length)) #pad length
 
-def _generate_subkeys(key):
+def _generate_subkeys(key: bytes):
     ''' Generates 16 subkeys from a 64 bit key. Used gpt-4o to write '''
     key = _bytes_to_bit_array(key)
     
@@ -64,17 +64,19 @@ def _generate_subkeys(key):
     permuted_key = _permute(key, subkey_tables._KEY_PERMUTATION1)
     
     # Split into C and D
-    C = permuted_key[:28]
-    D = permuted_key[28:]
+    L = permuted_key[:28]
+    R = permuted_key[28:]
     
     subkeys = []
     for shift in subkey_tables._KEY_SHIFT: # shifts to randomize new key
         # Left shift C and D
-        C = C[shift:] + C[:shift]
-        D = D[shift:] + D[:shift]
+        L = _lshift(L, shift)
+        R = _lshift(R, shift)
+        # L = L[shift:] + L[:shift]
+        # R = R[shift:] + R[:shift]
         
         # permutes 56 key into 48 bit subkeys
-        subkey = _permute(C+D, subkey_tables._KEY_PERMUTATION2)
+        subkey = _permute(L+R, subkey_tables._KEY_PERMUTATION2)
         subkeys.append(subkey)
     
     return subkeys
