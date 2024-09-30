@@ -63,7 +63,6 @@ def _generate_subkeys(key: bytes):
     # permutes 64 bit key into 56bits
     permuted_key = _permute(key, subkey_tables._KEY_PERMUTATION1)
     
-    # Split into C and D
     L = permuted_key[:28]
     R = permuted_key[28:]
     
@@ -81,8 +80,21 @@ def _generate_subkeys(key: bytes):
     
     return subkeys
 
+def _substitute(bit_array:list):
+    result = []
+    for i in range(0, len(bit_array), 6):
+      row = [bit_array[i], bit_array[i+5]]
+      col = bit_array[i+1:i+5]
+      row = int(''.join([str(i) for i in row]),2)
+      col = int(''.join([str(i) for i in col]),2)
+      sub = sbox_tables._S_BOXES[i//6][row][col]
+      sub = list(bin(sub)[2:].zfill(4))
+      result += sub
+      
+    return result
+
 def _permute(block, table):
-    return [block[i-1] for i in table] # need to i-1 as permutation keys are 1-indexed right now
+    return [block[i] for i in table]
 
 def _lshift(sequence: list, n: int):
     sequence = sequence[n:] + sequence[:n]
@@ -98,7 +110,7 @@ def _feistel_round(L, R, subkey):
     return newL, newR
 
 def _encrypt_block(block, subkeys):
-    ''' Used gpt-4o to generate permutation tables and give advice on how to structure loop '''
+    ''' Used gpt-4o to give advice on how to structure loop '''
     # split 64 bit block into 32 bit halves
     L = block[:len(block)//2]
     R = block[len(block)//2:]
@@ -164,6 +176,8 @@ def run_unit_tests():
       print('lshift:',t17)
       t17 = _lshift(t17, 1)
       print('lshift:',t17)
+      t18 = _substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
+      print(t18)
 
       assert t1 == b'CSC428\x02\x02', "Unit test #1 failed: _add_padding(b'CSC428')"
       assert t2 == b'TALLMAN\x01', 'failed t2'
@@ -185,10 +199,10 @@ def run_unit_tests():
       _hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) #b'ABCDFF00'
       _hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) #b'12345678'
 
-      plaint = b'1234567890'
-      key = b'abdefgh'
-      ciphert = encrypt(plaint,key)
-      print(ciphert)
+      # plaint = b'1234567890'
+      # key = b'abdefgh'
+      # ciphert = encrypt(plaint,key)
+      # print(ciphert)
     except:
       raise AssertionError
 
