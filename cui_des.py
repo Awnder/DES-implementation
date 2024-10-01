@@ -133,6 +133,10 @@ def _encrypt_block(block: list, subkeys: list):
 
     return block
 
+
+# decrypt function has to give subkeys in reverse order and will not add padding at the beginning of the algorithm
+# it will remove padding at the end tho
+
 def encrypt(data, key):
     
     """ Encrypts plaintext data with DES (Data Encryption Standard).
