@@ -81,11 +81,12 @@ def _generate_subkeys(key: bytes):
     return subkeys
 
 def _substitute(bit_array:list):
+    ''' substitutes key with subkey boxes '''
     result = []
     for i in range(0, len(bit_array), 6):
-      row = [bit_array[i], bit_array[i+5]]
-      col = bit_array[i+1:i+5]
-      row = int(''.join([str(i) for i in row]),2)
+      row = [bit_array[i], bit_array[i+5]] # 1st and last bit
+      col = bit_array[i+1:i+5]             # middle bits
+      row = int(''.join([str(i) for i in row]),2) # convert to binary
       col = int(''.join([str(i) for i in col]),2)
       sub = _S_BOXES[i//6][row][col]
       sub = list(bin(sub)[2:].zfill(4))
@@ -93,15 +94,23 @@ def _substitute(bit_array:list):
       
     return result
 
-def _permute(block, table):
+def _permute(block: list, table: list):
     return [block[i] for i in table]
 
-def _lshift(seQuence: list, n: int):
-    seQuence = seQuence[n:] + seQuence[:n]
-    return seQuence
+def _lshift(sequence: list, n: int):
+    sequence = sequence[n:] + sequence[:n]
+    return sequence
 
 def _xor(x: list, y: list):
     return [a^b for a,b in zip(x,y)]
+
+def _func_f(R: list, subkey: list):
+   ''' R: list of binary, subkey: list of binary. Wraps DES together for the 16 loops '''
+   temp = _permute(R,_EXPAND)
+   temp = _xor(temp, subkey)
+   temp = _substitute(temp)
+   temp = _permute(temp, _SBOX_PERM)
+   return temp
 
 def _feistel_round(L, R, subkey):
     ''' XORs the Left 32bits and Right 32bits together after permuting the right side. Used gpt-4o to write '''
@@ -135,7 +144,7 @@ def encrypt(data, key):
           key (bytes):  64-bit key used for DES encryption
 
         Returns:
-          An encrypted byte string of eQual length to the original data
+          An encrypted byte string of equal length to the original data
     """
     subkeys = _generate_subkeys(key)
     plaintext = _add_padding(data)
