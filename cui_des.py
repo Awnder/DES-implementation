@@ -96,9 +96,9 @@ def _substitute(bit_array:list):
 def _permute(block, table):
     return [block[i] for i in table]
 
-def _lshift(sequence: list, n: int):
-    sequence = sequence[n:] + sequence[:n]
-    return sequence
+def _lshift(seQuence: list, n: int):
+    seQuence = seQuence[n:] + seQuence[:n]
+    return seQuence
 
 def _xor(x: list, y: list):
     return [a^b for a,b in zip(x,y)]
@@ -135,7 +135,7 @@ def encrypt(data, key):
           key (bytes):  64-bit key used for DES encryption
 
         Returns:
-          An encrypted byte string of equal length to the original data
+          An encrypted byte string of eQual length to the original data
     """
     subkeys = _generate_subkeys(key)
     plaintext = _add_padding(data)
@@ -177,7 +177,39 @@ def run_unit_tests():
       t17 = _lshift(t17, 1)
       print('lshift:',t17)
       t18 = _substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
-      print(t18)
+      print('subst:',t18)
+      t_init_perm = _permute([
+          "y", "0", "u", "'", "v", "3", "i", "n", "t", "3", "r", "c", "3", "p", "t", "3",
+          "d", "a", "s", "u", "s", "p", "i", "c", "i", "0", "u", "s", "c", "i", "p", "h",
+          "3", "r", "f", "3", "x", "t", ",", "w", "h", "i", "c", "h", "y", "0", "u", "b",
+          "3", "l", "i", "3", "v", "3", "t", "0", "h", "a", "v", "3", "b", "3", "3", "n"
+      ], permutation_tables._INIT_PERMUTATION)
+      # "*", "!", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", 
+      #     "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", 
+      #     "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", 
+      #     "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+   
+      t_final_perm = _permute([
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+        "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5",
+        "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l",
+        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "!", "?", "*", ":", ")"
+      ], permutation_tables._FINAL_PERMUTATION)
+      
+      for i in range(len(t_final_perm)):
+        print(t_final_perm[i], end=' ')
+        if i != 0 and i % 15 == 0:
+          print()
+      print()
+
+      t_expand_perm = _permute([
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+        "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "!"
+      ], permutation_tables._EXPAND)
+      t_sbox_perm = _permute([
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+        "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "!", "1", "2", "3", "4", "5"
+      ], permutation_tables._SBOX_PERM)
 
       assert t1 == b'CSC428\x02\x02', "Unit test #1 failed: _add_padding(b'CSC428')"
       assert t2 == b'TALLMAN\x01', 'failed t2'
@@ -191,10 +223,32 @@ def run_unit_tests():
       assert t10 == b'\x00', 'failed 10'
       assert t11 == b'\xA5', 'failed 11'
       assert t12 == b'\xFF', 'failed 12'
-      assert t13 == [b'1111', b'2222', b'3333', b'4444']
-      assert t14 == [b'ABC', b'DEF', b'GHI', b'JKL', b'MN']
-      assert t15 == [b'THE C', b'ODE B', b'OOK B', b'Y SIN', b'GH']
-
+      assert t13 == [b'1111', b'2222', b'3333', b'4444'], 'failed 13'
+      assert t14 == [b'ABC', b'DEF', b'GHI', b'JKL', b'MN'], 'failed 14'
+      assert t15 == [b'THE C', b'ODE B', b'OOK B', b'Y SIN', b'GH'], 'failed 15'
+      assert t18 == ['0', '0', '1', '0', '1', '0', '1', '0', '0', '1', '0', '1', '0', '0', '0', '1', '1', '0', '1', '1', '1', '0', '1', '1', '0', '0', '0', '0', '0', '1', '0', '0']
+      # assert t_init_perm == [
+      #   "a", "l", "i", "r", "0", "a", "3", "0", "3", "3", "h", "3", "s", "u", "c", "'",
+      #   "3", "3", "0", "t", "i", "p", "3", "3", "n", "0", "b", "w", "h", "c", "3", "n",
+      #   "h", "3", "h", "3", "i", "d", "t", "y", "v", "i", "c", "t", "u", "s", "r", "u",
+      #   "b", "v", "y", "x", "c", "s", "3", "v", "3", "t", "u", ",", "p", "i", "t", "i"
+      # ], 'failed init perm'
+      assert t_final_perm == [
+        "d", "H", "l", "P", "7", "X", ")", "5", "c", "G", "k", "O", "6", "W", ":", "4",
+        "b", "F", "j", "N", "5", "V", "*", "3", "a", "E", "i", "M", "4", "U", "?", "2",
+        "9", "D", "h", "L", "3", "T", "!", "1", "8", "C", "g", "K", "2", "S", "0", "0",
+        "7", "B", "f", "J", "1", "R", "9", "Z", "6", "A", "e", "I", "0", "Q", "8", "Y"
+      ], 'failed final perm'
+      assert t_expand_perm == [
+        "!", "A", "B", "C", "D", "E", "D", "E", "F", "G", "H", "I", "H", "I", "J", "K",
+        "L", "M", "L", "M", "N", "O", "P", "Q", "P", "Q", "R", "S", "T", "U", "T", "U",
+        "V", "W", "X", "Y", "X", "Y", "Z", "0", "1", "2", "1", "2", "3", "4", "!", "A"
+      ], 'failed expand perm'
+      assert t_sbox_perm == [
+        "P", "G", "T", "U", "Z", "L", "1", "Q", "A", "O", "W", "Z", "E", "R", "4", "J",
+        "B", "H", "X", "N", "5", "!", "C", "I", "S", "M", "3", "F", "V", "K", "D", "Y"
+      ]
+      
       _hex_print([1,1,1,1,0,1,0,1,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,1,1,0,1,1,0,1,1]) #b'F50A96DB'
       _hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) #b'ABCDFF00'
       _hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) #b'12345678'
