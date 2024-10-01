@@ -178,6 +178,7 @@ def run_unit_tests():
       print('lshift:',t17)
       t18 = _substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
       print('subst:',t18)
+     
       t_init_perm = _permute([
           "y", "0", "u", "'", "v", "3", "i", "n", "t", "3", "r", "c", "3", "p", "t", "3",
           "d", "a", "s", "u", "s", "p", "i", "c", "i", "0", "u", "s", "c", "i", "p", "h",
@@ -188,20 +189,12 @@ def run_unit_tests():
       #     "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", 
       #     "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", 
       #     "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
-   
       t_final_perm = _permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5",
         "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l",
         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "!", "?", "*", ":", ")"
       ], permutation_tables._FINAL_PERMUTATION)
-      
-      for i in range(len(t_final_perm)):
-        print(t_final_perm[i], end=' ')
-        if i != 0 and i % 15 == 0:
-          print()
-      print()
-
       t_expand_perm = _permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "!"
@@ -210,6 +203,12 @@ def run_unit_tests():
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "!", "1", "2", "3", "4", "5"
       ], permutation_tables._SBOX_PERM)
+
+      for i in range(len(t_init_perm)):
+        print(t_init_perm[i], end=' ')
+        if i != 0 and i % 15 == 0:
+          print()
+      print()
 
       assert t1 == b'CSC428\x02\x02', "Unit test #1 failed: _add_padding(b'CSC428')"
       assert t2 == b'TALLMAN\x01', 'failed t2'
@@ -227,12 +226,12 @@ def run_unit_tests():
       assert t14 == [b'ABC', b'DEF', b'GHI', b'JKL', b'MN'], 'failed 14'
       assert t15 == [b'THE C', b'ODE B', b'OOK B', b'Y SIN', b'GH'], 'failed 15'
       assert t18 == ['0', '0', '1', '0', '1', '0', '1', '0', '0', '1', '0', '1', '0', '0', '0', '1', '1', '0', '1', '1', '1', '0', '1', '1', '0', '0', '0', '0', '0', '1', '0', '0']
-      # assert t_init_perm == [
-      #   "a", "l", "i", "r", "0", "a", "3", "0", "3", "3", "h", "3", "s", "u", "c", "'",
-      #   "3", "3", "0", "t", "i", "p", "3", "3", "n", "0", "b", "w", "h", "c", "3", "n",
-      #   "h", "3", "h", "3", "i", "d", "t", "y", "v", "i", "c", "t", "u", "s", "r", "u",
-      #   "b", "v", "y", "x", "c", "s", "3", "v", "3", "t", "u", ",", "p", "i", "t", "i"
-      # ], 'failed init perm'
+      assert t_init_perm == [
+        "a", "l", "i", "r", "0", "a", "3", "0", "3", "3", "h", "3", "s", "u", "c", "'",
+        "3", "3", "0", "t", "i", "p", "p", "3", "n", "0", "b", "w", "h", "c", "3", "n",
+        "h", "3", "h", "3", "i", "d", "t", "y", "v", "i", "c", "f", "u", "s", "r", "u",
+        "b", "v", "y", "x", "c", "s", "3", "v", "3", "t", "u", ",", "p", "i", "t", "i"
+      ], 'failed init perm'
       assert t_final_perm == [
         "d", "H", "l", "P", "7", "X", ")", "5", "c", "G", "k", "O", "6", "W", ":", "4",
         "b", "F", "j", "N", "5", "V", "*", "3", "a", "E", "i", "M", "4", "U", "?", "2",
@@ -245,7 +244,7 @@ def run_unit_tests():
         "V", "W", "X", "Y", "X", "Y", "Z", "0", "1", "2", "1", "2", "3", "4", "!", "A"
       ], 'failed expand perm'
       assert t_sbox_perm == [
-        "P", "G", "T", "U", "Z", "L", "1", "Q", "A", "O", "W", "Z", "E", "R", "4", "J",
+        "P", "G", "T", "U", "2", "L", "1", "Q", "A", "O", "W", "Z", "E", "R", "4", "J",
         "B", "H", "X", "N", "5", "!", "C", "I", "S", "M", "3", "F", "V", "K", "D", "Y"
       ]
       
