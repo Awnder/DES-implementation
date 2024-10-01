@@ -105,33 +105,31 @@ def _xor(x: list, y: list):
     return [a^b for a,b in zip(x,y)]
 
 def _func_f(R: list, subkey: list):
-   ''' R: list of binary, subkey: list of binary. Wraps DES together for the 16 loops '''
+   ''' R: list - 32 bits, subkey: list - 48 bits. Wraps DES together for the 16 loops '''
    temp = _permute(R,_EXPAND)
    temp = _xor(temp, subkey)
    temp = _substitute(temp)
    temp = _permute(temp, _SBOX_PERM)
    return temp
 
-def _feistel_round(L, R, subkey):
-    ''' XORs the Left 32bits and Right 32bits together after permuting the right side. Used gpt-4o to write '''
-    newL = R
-    newR = [l ^ p for l, p in zip(L, _permute(R, subkey))]
-    return newL, newR
-
-def _encrypt_block(block, subkeys):
-    ''' Used gpt-4o to give advice on how to structure loop '''
-    # split 64 bit block into 32 bit halves
-    L = block[:len(block)//2]
-    R = block[len(block)//2:]
-
+def _encrypt_block(block: list, subkeys: list):
+    ''' block: list - 64 bits, subkeys: list of 16 bit lists '''
+    # Used gpt-4o to give advice on how to structure loop
     block = _permute(block, _INIT_PERMUTATION)
+
+    # split 64 bit block into 32 bit halves
+    L = block[:32]
+    R = block[32:]
     
     for i in range(16):
-      L, R = _feistel_round(L, R, subkeys[i])
-
-    block = R + L # combine halves for ciphertext
-       
-    block = _permute(block, _FINAL_PERMUTATION)
+      temp = _func_f(R, subkeys[i])
+      temp = _xor(temp, L)
+      # change L to R and R to modified R
+      L = R
+      R = temp
+    
+    # need to do one final swap of L and R for the algorithm
+    block = _permute(R+L, _FINAL_PERMUTATION)
 
     return block
 
