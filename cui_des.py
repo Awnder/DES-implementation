@@ -210,9 +210,12 @@ def _substitute(bit_array:list):
     for i in range(0, len(bit_array), 6):
       row = [bit_array[i], bit_array[i+5]] # 1st and last bit
       col = bit_array[i+1:i+5]             # middle bits
+
       row = int(''.join([str(i) for i in row]),2) # convert to binary
       col = int(''.join([str(i) for i in col]),2)
-      sub = _S_BOXES[i//6][row][col]
+
+      sub = _S_BOXES[i//6][row][col] # getting 1 out of the 6 boxes
+
       sub = list(bin(sub)[2:].zfill(4)) # convert to binary, then pad
       sub = [int(s) for s in sub] # in a binary string, so convert to integer
 
