@@ -195,12 +195,9 @@ def _generate_subkeys(key: bytes):
     
     subkeys = []
     for shift in _KEY_SHIFT: # shifts to randomize new key
-        # Left shift C and D
         L = _lshift(L, shift)
         R = _lshift(R, shift)
-        # L = L[shift:] + L[:shift]
-        # R = R[shift:] + R[:shift]
-        
+
         # permutes 56 key into 48 bit subkeys
         subkey = _permute(L+R, _KEY_PERMUTATION2)
         subkeys.append(subkey)
@@ -216,9 +213,10 @@ def _substitute(bit_array:list):
       row = int(''.join([str(i) for i in row]),2) # convert to binary
       col = int(''.join([str(i) for i in col]),2)
       sub = _S_BOXES[i//6][row][col]
-      sub = list(bin(sub)[2:].zfill(4))
+      sub = list(bin(sub)[2:].zfill(4)) # convert to binary, then pad
+      sub = [int(s) for s in sub] # in a binary string, so convert to integer
+
       result += sub
-      
     return result
 
 def _permute(block: list, table: list):
@@ -232,16 +230,19 @@ def _xor(x: list, y: list):
     return [a^b for a,b in zip(x,y)]
 
 def _func_f(R: list, subkey: list):
-   ''' R: list - 32 bits, subkey: list - 48 bits. Wraps DES together for the 16 loops '''
-   temp = _permute(R,_EXPAND)
-   temp = _xor(temp, subkey)
-   temp = _substitute(temp)
-   temp = _permute(temp, _SBOX_PERM)
-   return temp
+    ''' R: list - 32 bits, subkey: list - 48 bits. Wraps DES together for the 16 loops '''
+    # called _func_f in class. will change to _function if necessary, but _function seems ambiguous
+    temp = _permute(R,_EXPAND)
+    temp = _xor(temp, subkey)
+    temp = _substitute(temp)
+    temp = _permute(temp, _SBOX_PERM)
+    return temp
 
-def _encrypt_block(block: list, subkeys: list):
-    ''' block: list - 64 bits, subkeys: list of 16 bit lists '''
-    # Used gpt-4o to give advice on how to structure loop
+def _crypt_block(block: list, subkeys: list):
+    ''' block: list - 64 bits, subkeys: list of 16 bit lists 
+        encrypts one block of 64 bit text
+    '''
+    # rewrote in class with prof tallman
     block = _permute(block, _INIT_PERMUTATION)
 
     # split 64 bit block into 32 bit halves
@@ -259,7 +260,6 @@ def _encrypt_block(block: list, subkeys: list):
     block = _permute(R+L, _FINAL_PERMUTATION)
 
     return block
-
 
 # decrypt function has to give subkeys in reverse order and will not add padding at the beginning of the algorithm
 # it will remove padding at the end tho
@@ -280,7 +280,7 @@ def encrypt(data, key):
     plaintext = _bytes_to_bit_array(plaintext)
     ciphertext = []
     for block in _nsplit(plaintext, 64):
-      ciphertext += _encrypt_block(block, subkeys)
+      ciphertext += _crypt_block(block, subkeys)
     ciphertext = _bit_array_to_bytes(ciphertext)
     return ciphertext
 
@@ -311,12 +311,19 @@ def run_unit_tests():
       t_xor = _xor(b'1111', b'0101')
       t_lshift = _lshift([1,0,1,1], 1)
       t_subst = _substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
-      t_init_perm = _permute([
-          "y", "0", "u", "'", "v", "3", "i", "n", "t", "3", "r", "c", "3", "p", "t", "3",
-          "d", "a", "s", "u", "s", "p", "i", "c", "i", "0", "u", "s", "c", "i", "p", "h",
-          "3", "r", "f", "3", "x", "t", ",", "w", "h", "i", "c", "h", "y", "0", "u", "b",
-          "3", "l", "i", "3", "v", "3", "t", "0", "h", "a", "v", "3", "b", "3", "3", "n"
+      t_init_perm1 = _permute([
+        "y", "0", "u", "'", "v", "3", "i", "n", "t", "3", "r", "c", "3", "p", "t", "3",
+        "d", "a", "s", "u", "s", "p", "i", "c", "i", "0", "u", "s", "c", "i", "p", "h",
+        "3", "r", "f", "3", "x", "t", ",", "w", "h", "i", "c", "h", "y", "0", "u", "b",
+        "3", "l", "i", "3", "v", "3", "t", "0", "h", "a", "v", "3", "b", "3", "3", "n"
       ], _INIT_PERMUTATION)
+      t_init_perm2 = _permute([
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+        "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", 'a', 'b', 'c', 'd', 'e', 'f',
+        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+        'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '@'
+      ], _INIT_PERMUTATION)
+      print(t_init_perm2)
       t_final_perm = _permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5",
@@ -350,15 +357,21 @@ def run_unit_tests():
       assert t_nsplit3 == [b'THE C', b'ODE B', b'OOK B', b'Y SIN', b'GH'], 'failed nsplit 3'
       assert t_xor == [1,0,1,0], 'failed xor'
       assert t_lshift == [0,1,1,1], 'failed lshift'
-      assert t_subst == ['0', '0', '1', '0', '1', '0', '1', '0', '0', '1', '0', 
-                         '1', '0', '0', '0', '1', '1', '0', '1', '1', '1', '0', 
-                         '1', '1', '0', '0', '0', '0', '0', '1', '0', '0'], 'failed subst'
-      assert t_init_perm == [
+      assert t_subst == [0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 
+                         1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0], 'failed subst'
+      assert t_init_perm1 == [
         "a", "l", "i", "r", "0", "a", "3", "0", "3", "3", "h", "3", "s", "u", "c", "'",
         "3", "3", "0", "t", "i", "p", "p", "3", "n", "0", "b", "w", "h", "c", "3", "n",
         "h", "3", "h", "3", "i", "d", "t", "y", "v", "i", "c", "f", "u", "s", "r", "u",
         "b", "v", "y", "x", "c", "s", "3", "v", "3", "t", "u", ",", "p", "i", "t", "i"
-      ], 'failed init perm'
+      ], 'failed init perm 1'
+      assert t_init_perm2 == [
+         '6', 'x', 'p', 'h', 'Z', 'R', 'J', 'B', '8', 'z', 'r', 'j', 'b', 'T', 'L',
+         'D', '0', '2', 't', 'l', 'd', 'V', 'N', 'F', '@', '4', 'v', 'n', 'f', 'X',
+         'P', 'H', '5', 'w', 'o', 'g', 'Y', 'Q', 'I', 'A', '7', 'y', 'q', 'i', 'a',
+         'S', 'K', 'C', '9', '1', 's', 'k', 'c', 'U', 'M', 'E', '!', '3', 'u', 'm',
+         'e', 'W', 'O', 'G'
+      ], 'failed init perm 2'
       assert t_final_perm == [
         "d", "H", "l", "P", "7", "X", ")", "5", "c", "G", "k", "O", "6", "W", ":", "4",
         "b", "F", "j", "N", "5", "V", "*", "3", "a", "E", "i", "M", "4", "U", "?", "2",
@@ -380,10 +393,10 @@ def run_unit_tests():
       _hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) # b'ABCDFF00'
       _hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) # b'12345678'
 
-      # plaint = b'1234567890'
-      # key = b'abdefgh'
-      # ciphert = encrypt(plaint,key)
-      # print(ciphert)
+      plaint = b'1234567890'
+      key = b"\xEF\x00\xEF\x00\xFF\x80\xFF\x80"
+      ciphert = encrypt(plaint,key)
+      print(ciphert)
     except:
       raise AssertionError
 
