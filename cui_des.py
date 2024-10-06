@@ -326,7 +326,6 @@ def run_unit_tests():
         'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
         'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '@'
       ], _INIT_PERMUTATION)
-      print(t_init_perm2)
       t_final_perm = _permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5",
@@ -369,11 +368,11 @@ def run_unit_tests():
         "b", "v", "y", "x", "c", "s", "3", "v", "3", "t", "u", ",", "p", "i", "t", "i"
       ], 'failed init perm 1'
       assert t_init_perm2 == [
-         '6', 'x', 'p', 'h', 'Z', 'R', 'J', 'B', '8', 'z', 'r', 'j', 'b', 'T', 'L',
-         'D', '0', '2', 't', 'l', 'd', 'V', 'N', 'F', '@', '4', 'v', 'n', 'f', 'X',
-         'P', 'H', '5', 'w', 'o', 'g', 'Y', 'Q', 'I', 'A', '7', 'y', 'q', 'i', 'a',
-         'S', 'K', 'C', '9', '1', 's', 'k', 'c', 'U', 'M', 'E', '!', '3', 'u', 'm',
-         'e', 'W', 'O', 'G'
+         '5','x','p','h','Z','R','J','B','7','z','r','j','b','T','L',
+         'D','9','1','t','l','d','V','N','F','@','3','v','n','f','X',
+         'P','H','4','w','o','g','Y','Q','I','A','6','y','q','i','a',
+         'S','K','C','8','0','s','k','c','U','M','E','!','2','u','m',
+         'e','W','O','G'
       ], 'failed init perm 2'
       assert t_final_perm == [
         "d", "H", "l", "P", "7", "X", ")", "5", "c", "G", "k", "O", "6", "W", ":", "4",
@@ -399,7 +398,7 @@ def run_unit_tests():
       plaint = b'1234567890'
       key = b"\xEF\x00\xEF\x00\xFF\x80\xFF\x80"
       ciphert = encrypt(plaint,key)
-      print(ciphert)
+      print(ciphert) 
     except:
       raise AssertionError
 
