@@ -1,3 +1,4 @@
+
 ### tables
 # 32-bit to 48-bit
 _EXPAND = [31,  0,  1,  2,  3,  4,  3,  4,
@@ -130,19 +131,94 @@ subkey_result = [ [0,1,1,0,1,1,1,1,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,1,
                   [1,0,0,1,1,0,1,1,0,1,0,1,0,0,1,1,1,1,1,0,0,1,0,1,
                    0,1,0,0,0,0,1,1,0,0,0,1,1,0,0,0,1,0,1,1,1,1,0,1] ]
 
-def _add_padding(message):
+class DES:
+  def __init__(self, mode='ECB', iv='\x00\x00\x00\x00\x00\x00\x00\x00'):
+    self.mode = mode
+    self.iv = iv
+    self._iv = iv
+
+  # decrypt function has to give subkeys in reverse order and will not add padding at the beginning of the algorithm
+  # it will remove padding at the end tho
+
+  def encrypt(self, data, key):
+    """ Encrypts plaintext data with DES (Data Encryption Standard).
+
+        Parameters:
+          data (bytes): input data to be encrypted
+          key (bytes):  64-bit key used for DES encryption
+
+        Returns:
+          An encrypted byte string of equal length to the original data
+    """
+
+    subkeys = DES._generate_subkeys(key)
+
+    if self.mode == 'ECB' or self.mode == 'CBC':
+      plaintext = DES._add_padding(data)
+
+    plaintext = DES._bytes_to_bit_array(plaintext)
+
+    ciphertext = []
+
+    for p in DES._nsplit(plaintext, 64):
+      if self.mode == 'ECB':
+        result = DES._crypt_block(p, subkeys)
+
+      if self.mode == 'CBC':
+        p = DES._xor(p, self._iv)
+        result = DES._crypt_block(p, subkeys)
+        self._iv = result
+
+      if self.mode == 'OFB':
+        result = DES._crypt_block(subkeys, self._iv)
+        result = DES._xor(result, p)
+      
+
+    ciphertext = DES._bit_array_to_bytes(result)
+    return ciphertext
+        
+  def decrypt(data, key):
+    pass
+
+  def _crypt_block(block: list, subkeys: list):
+    ''' block: list - 64 bits, subkeys: list of 16 bit lists 
+        encrypts one block of 64 bit text
+    '''
+    # rewrote in class with prof tallman
+    block = DES._permute(block, _INIT_PERMUTATION)
+
+    # split 64 bit block into 32 bit halves
+    L = block[:32]
+    R = block[32:]
+    
+    for i in range(16):
+      temp = DES._func_f(R, subkeys[i])
+      temp = DES._xor(temp, L)
+      # change L to R and R to modified R
+      L = R
+      R = temp
+    
+    # need to do one final swap of L and R for the algorithm
+    block = DES._permute(R+L, _FINAL_PERMUTATION)
+
+    return block
+
+  @staticmethod
+  def _add_padding(message):
     ''' Returns the message with extra padding (ie: 2 bytes w padding -> \x02\x02).
         used tallman's code
     '''
     pad_length = 8 - len(message) % 8
     return message + (chr(pad_length) * pad_length).encode("utf-8")
 
-def _rem_padding(message):
+  @staticmethod
+  def _rem_padding(message):
     ''' Returns the message and removes extra padding '''
     last = message[-1]
     return (message[:-last])
 
-def _bytes_to_bit_array(byte_string):
+  @staticmethod
+  def _bytes_to_bit_array(byte_string):
     ''' converts a byte string to bit array. used tallman's code '''
     result = []
     for byte in byte_string:
@@ -154,7 +230,8 @@ def _bytes_to_bit_array(byte_string):
               result.append(0)
     return result
 
-def _bit_array_to_bytes(bit_array):
+  @staticmethod
+  def _bit_array_to_bytes(bit_array):
     ''' converts bit array to a byte string. used tallman's code and edited using gpt-4o as bit length was off '''
     result = []
     byte = 0
@@ -169,7 +246,8 @@ def _bit_array_to_bytes(bit_array):
       result.append(byte)
     return bytes(result)
 
-def _nsplit(data, split_size=64):
+  @staticmethod
+  def _nsplit(data, split_size=64):
     ''' Splits data into a list where each len(element) == split_size.
         The last element does not necessarily have the max amount of characters 
     '''
@@ -177,34 +255,37 @@ def _nsplit(data, split_size=64):
       stop = i+split_size
       yield data[i:stop]
 
-def _hex_print(block, length=16):
+  @staticmethod
+  def _hex_print(block, length=16):
     ''' gets a list of binary digits and prints the hex representation, used tallman's code '''
     s = [str(i) for i in block]
     binary = int(''.join(s),2)
     print(hex(binary)[2:].zfill(length)) #pad length
 
-def _generate_subkeys(key: bytes):
+  @staticmethod
+  def _generate_subkeys(key: bytes):
     ''' Generates 16 subkeys from a 64 bit key. Used gpt-4o to write '''
-    key = _bytes_to_bit_array(key)
+    key = DES._bytes_to_bit_array(key)
     
     # permutes 64 bit key into 56bits
-    permuted_key = _permute(key, _KEY_PERMUTATION1)
+    permuted_key = DES._permute(key, _KEY_PERMUTATION1)
     
     L = permuted_key[:28]
     R = permuted_key[28:]
     
     subkeys = []
     for shift in _KEY_SHIFT: # shifts to randomize new key
-        L = _lshift(L, shift)
-        R = _lshift(R, shift)
+        L = DES._lshift(L, shift)
+        R = DES._lshift(R, shift)
 
         # permutes 56 key into 48 bit subkeys
-        subkey = _permute(L+R, _KEY_PERMUTATION2)
+        subkey = DES._permute(L+R, _KEY_PERMUTATION2)
         subkeys.append(subkey)
     
     return subkeys
 
-def _substitute(bit_array:list):
+  @staticmethod
+  def _substitute(bit_array:list):
     ''' substitutes key with subkey boxes '''
     result = []
     for i in range(0, len(bit_array), 6):
@@ -222,70 +303,29 @@ def _substitute(bit_array:list):
       result += sub
     return result
 
-def _permute(block: list, table: list):
+  @staticmethod
+  def _permute(block: list, table: list):
     return [block[i] for i in table]
 
-def _lshift(sequence: list, n: int):
+  @staticmethod
+  def _lshift(sequence: list, n: int):
     sequence = sequence[n:] + sequence[:n]
     return sequence
 
-def _xor(x: list, y: list):
+  @staticmethod
+  def _xor(x: list, y: list):
     return [a^b for a,b in zip(x,y)]
 
-def _func_f(R: list, subkey: list):
+  @staticmethod
+  def _func_f(R: list, subkey: list):
     ''' R: list - 32 bits, subkey: list - 48 bits. Wraps DES together for the 16 loops '''
     # called _func_f in class. will change to _function if necessary, but _function seems ambiguous
-    temp = _permute(R,_EXPAND)
-    temp = _xor(temp, subkey)
-    temp = _substitute(temp)
-    temp = _permute(temp, _SBOX_PERM)
+    temp = DES._permute(R,_EXPAND)
+    temp = DES._xor(temp, subkey)
+    temp = DES._substitute(temp)
+    temp = DES._permute(temp, _SBOX_PERM)
     return temp
 
-def _crypt_block(block: list, subkeys: list):
-    ''' block: list - 64 bits, subkeys: list of 16 bit lists 
-        encrypts one block of 64 bit text
-    '''
-    # rewrote in class with prof tallman
-    block = _permute(block, _INIT_PERMUTATION)
-
-    # split 64 bit block into 32 bit halves
-    L = block[:32]
-    R = block[32:]
-    
-    for i in range(16):
-      temp = _func_f(R, subkeys[i])
-      temp = _xor(temp, L)
-      # change L to R and R to modified R
-      L = R
-      R = temp
-    
-    # need to do one final swap of L and R for the algorithm
-    block = _permute(R+L, _FINAL_PERMUTATION)
-
-    return block
-
-# decrypt function has to give subkeys in reverse order and will not add padding at the beginning of the algorithm
-# it will remove padding at the end tho
-
-def encrypt(data, key):
-    
-    """ Encrypts plaintext data with DES (Data Encryption Standard).
-
-        Parameters:
-          data (bytes): input data to be encrypted
-          key (bytes):  64-bit key used for DES encryption
-
-        Returns:
-          An encrypted byte string of equal length to the original data
-    """
-    subkeys = _generate_subkeys(key)
-    plaintext = _add_padding(data)
-    plaintext = _bytes_to_bit_array(plaintext)
-    ciphertext = []
-    for block in _nsplit(plaintext, 64):
-      ciphertext += _crypt_block(block, subkeys)
-    ciphertext = _bit_array_to_bytes(ciphertext)
-    return ciphertext
 
 def run_unit_tests():
     """ Runs unit tests for each function in this module. Prints 'ALL UNIT
@@ -293,54 +333,54 @@ def run_unit_tests():
         AssertionError if any single unit test fails. """
 
     try:
-      t_add1 = _add_padding(b'CSC428')
-      t_add2 = _add_padding(b'TALLMAN')
-      t_add3 = _add_padding(b'JTALLMAN')
-      t_rem1 = _rem_padding(b'CSC428\x02\x02')
-      t_rem2 = _rem_padding(b'TALLMAN\x01')
-      t_rem3 = _rem_padding(b'JTALLMAN\x08\x08\x08\x08\x08\x08\x08\x08')
-      t_btba1 = _bytes_to_bit_array(b'\x00')
-      t_btba2 = _bytes_to_bit_array(b'\xA5')
-      t_btba3 = _bytes_to_bit_array(b'\xFF')
-      t_batb1 = _bit_array_to_bytes([0,0,0,0,0,0,0,0])
-      t_batb2 = _bit_array_to_bytes([1,0,1,0,0,1,0,1])
-      t_batb3 = _bit_array_to_bytes([1,1,1,1,1,1,1,1])
-      t_nsplit1 = _nsplit(b'1111222233334444',4)
+      t_add1 = DES._add_padding(b'CSC428')
+      t_add2 = DES._add_padding(b'TALLMAN')
+      t_add3 = DES._add_padding(b'JTALLMAN')
+      t_rem1 = DES._rem_padding(b'CSC428\x02\x02')
+      t_rem2 = DES._rem_padding(b'TALLMAN\x01')
+      t_rem3 = DES._rem_padding(b'JTALLMAN\x08\x08\x08\x08\x08\x08\x08\x08')
+      t_btba1 = DES._bytes_to_bit_array(b'\x00')
+      t_btba2 = DES._bytes_to_bit_array(b'\xA5')
+      t_btba3 = DES._bytes_to_bit_array(b'\xFF')
+      t_batb1 = DES._bit_array_to_bytes([0,0,0,0,0,0,0,0])
+      t_batb2 = DES._bit_array_to_bytes([1,0,1,0,0,1,0,1])
+      t_batb3 = DES._bit_array_to_bytes([1,1,1,1,1,1,1,1])
+      t_nsplit1 = DES._nsplit(b'1111222233334444',4)
       t_nsplit1 = [t for t in t_nsplit1]
-      t_nsplit2 = _nsplit(b'ABCDEFGHIJKLMN', 3)
+      t_nsplit2 = DES._nsplit(b'ABCDEFGHIJKLMN', 3)
       t_nsplit2 = [t for t in t_nsplit2]
-      t_nsplit3 = _nsplit(b'THE CODE BOOK BY SINGH', 5)
+      t_nsplit3 = DES._nsplit(b'THE CODE BOOK BY SINGH', 5)
       t_nsplit3 = [t for t in t_nsplit3]
-      t_xor = _xor(b'1111', b'0101')
-      t_lshift = _lshift([1,0,1,1], 1)
-      t_subst = _substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
-      t_init_perm1 = _permute([
+      t_xor = DES._xor(b'1111', b'0101')
+      t_lshift = DES._lshift([1,0,1,1], 1)
+      t_subst = DES._substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
+      t_init_perm1 = DES._permute([
         "y", "0", "u", "'", "v", "3", "i", "n", "t", "3", "r", "c", "3", "p", "t", "3",
         "d", "a", "s", "u", "s", "p", "i", "c", "i", "0", "u", "s", "c", "i", "p", "h",
         "3", "r", "f", "3", "x", "t", ",", "w", "h", "i", "c", "h", "y", "0", "u", "b",
         "3", "l", "i", "3", "v", "3", "t", "0", "h", "a", "v", "3", "b", "3", "3", "n"
       ], _INIT_PERMUTATION)
-      t_init_perm2 = _permute([
+      t_init_perm2 = DES._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", 'a', 'b', 'c', 'd', 'e', 'f',
         'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
         'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '@'
       ], _INIT_PERMUTATION)
-      t_final_perm = _permute([
+      t_final_perm = DES._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5",
         "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l",
         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "!", "?", "*", ":", ")"
       ], _FINAL_PERMUTATION)
-      t_expand_perm = _permute([
+      t_expand_perm = DES._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "!"
       ], _EXPAND)
-      t_sbox_perm = _permute([
+      t_sbox_perm = DES._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "!", "1", "2", "3", "4", "5"
       ], _SBOX_PERM)
-      t_subkeys = _generate_subkeys(subkey_input)
+      t_subkeys = DES._generate_subkeys(subkey_input)
 
       assert t_add1 == b'CSC428\x02\x02', "failed add 1"
       assert t_add2 == b'TALLMAN\x01', 'failed add 2'
@@ -391,16 +431,15 @@ def run_unit_tests():
       ], 'failed sbox perm'
       assert t_subkeys == subkey_result, 'failed subkeys'
 
-      _hex_print([1,1,1,1,0,1,0,1,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,1,1,0,1,1,0,1,1]) # b'F50A96DB'
-      _hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) # b'ABCDFF00'
-      _hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) # b'12345678'
+      DES._hex_print([1,1,1,1,0,1,0,1,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,1,1,0,1,1,0,1,1]) # b'F50A96DB'
+      DES._hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) # b'ABCDFF00'
+      DES._hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) # b'12345678'
 
       plaint = b'1234567890'
       key = b"\xEF\x00\xEF\x00\xFF\x80\xFF\x80"
-      ciphert = encrypt(plaint,key)
+      ciphert = DES.encrypt(plaint,key)
       print(ciphert) 
     except:
       raise AssertionError
 
 run_unit_tests()
-
