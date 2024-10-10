@@ -140,6 +140,9 @@ class DES:
   # decrypt function has to give subkeys in reverse order and will not add padding at the beginning of the algorithm
   # it will remove padding at the end tho
 
+  def resetIV(self):
+    self._iv = self.iv
+
   def encrypt(self, data, key):
     """ Encrypts plaintext data with DES (Data Encryption Standard).
 
@@ -148,18 +151,17 @@ class DES:
           key (bytes):  64-bit key used for DES encryption
 
         Returns:
-          An encrypted byte string of equal length to the original data
+          An encrypted byte string of equal length to the original data, encrypted by specific DES mode
     """
-
     subkeys = DES._generate_subkeys(key)
 
+    plaintext = data
     if self.mode == 'ECB' or self.mode == 'CBC':
       plaintext = DES._add_padding(data)
 
     plaintext = DES._bytes_to_bit_array(plaintext)
 
     ciphertext = []
-
     for p in DES._nsplit(plaintext, 64):
       if self.mode == 'ECB':
         result = DES._crypt_block(p, subkeys)
@@ -171,14 +173,52 @@ class DES:
 
       if self.mode == 'OFB':
         result = DES._crypt_block(subkeys, self._iv)
+        self._iv = result
         result = DES._xor(result, p)
-      
 
-    ciphertext = DES._bit_array_to_bytes(result)
+      ciphertext += result
+
+    ciphertext = DES._bit_array_to_bytes(ciphertext)
+
     return ciphertext
         
-  def decrypt(data, key):
-    pass
+  def decrypt(self, data, key):
+    """ Decrypts ciphertext data with DES (Data Encryption Standard).
+
+        Parameters:
+          data (bytes): input data to be decrypted
+          key (bytes):  64-bit key used for DES decryption
+
+        Returns:
+          An decrypted byte string of equal length to the original data, decrypted by specific DES mode
+    """
+    subkeys = list(reversed(DES._generate_subkeys(key)))
+
+    ciphertext = DES._bytes_to_bit_array(data)
+
+    plaintext = []
+    for c in DES._nsplit(ciphertext, 64):
+      if self.mode == 'ECB':
+        result = DES._crypt_block(c, subkeys)
+
+      if self.mode == 'CBC':
+        result = DES._crypt_block(c, subkeys)
+        self._iv = result
+        result = DES._xor(self.iv, result)
+
+      if self.mode == 'OFB': # does not change in decryption
+        result = DES._crypt_block(subkeys, self._iv)
+        self._iv = result
+        result = DES._xor(result, c)
+
+      plaintext += result
+
+    plaintext = DES._bit_array_to_bytes(result)
+
+    if self.mode == 'ECB' or self.mode == 'CBC':
+      plaintext = DES._rem_padding(plaintext)
+
+    return plaintext
 
   def _crypt_block(block: list, subkeys: list):
     ''' block: list - 64 bits, subkeys: list of 16 bit lists 
@@ -435,11 +475,8 @@ def run_unit_tests():
       DES._hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) # b'ABCDFF00'
       DES._hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) # b'12345678'
 
-      plaint = b'1234567890'
-      key = b"\xEF\x00\xEF\x00\xFF\x80\xFF\x80"
-      ciphert = DES.encrypt(plaint,key)
-      print(ciphert) 
     except:
       raise AssertionError
 
-run_unit_tests()
+if __name__ == 'main':
+  run_unit_tests()
