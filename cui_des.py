@@ -165,18 +165,19 @@ class DES:
     for p in DES._nsplit(plaintext, 64):
       if self.mode == 'ECB':
         result = DES._crypt_block(p, subkeys)
+        ciphertext += result
 
       if self.mode == 'CBC':
         p = DES._xor(p, self._iv)
         result = DES._crypt_block(p, subkeys)
         self._iv = result
+        ciphertext += result
 
       if self.mode == 'OFB':
-        result = DES._crypt_block(subkeys, self._iv)
+        result = DES._crypt_block(self._iv, subkeys)
         self._iv = result
-        result = DES._xor(result, p)
+        ciphertext += DES._xor(p, result)
 
-      ciphertext += result
 
     ciphertext = DES._bit_array_to_bytes(ciphertext)
 
@@ -192,7 +193,13 @@ class DES:
         Returns:
           An decrypted byte string of equal length to the original data, decrypted by specific DES mode
     """
-    subkeys = list(reversed(DES._generate_subkeys(key)))
+    if self.mode == 'ECB' or self.mode == 'CBC':
+      subkeys = list(reversed(DES._generate_subkeys(key)))
+    else:
+      subkeys = DES._generate_subkeys(key)
+
+    if self.mode == 'OFB': # b/c using _iv in crypt, need to be a bit list
+      self._iv = DES._bytes_to_bit_array(self._iv) 
 
     ciphertext = DES._bytes_to_bit_array(data)
 
@@ -200,20 +207,19 @@ class DES:
     for c in DES._nsplit(ciphertext, 64):
       if self.mode == 'ECB':
         result = DES._crypt_block(c, subkeys)
+        plaintext += result
 
       if self.mode == 'CBC':
         result = DES._crypt_block(c, subkeys)
+        plaintext += DES._xor(self._iv, result)
+        self._iv = c
+
+      if self.mode == 'OFB':
+        result = DES._crypt_block(self._iv, subkeys)
         self._iv = result
-        result = DES._xor(self.iv, result)
+        plaintext += DES._xor(c, result)
 
-      if self.mode == 'OFB': # does not change in decryption
-        result = DES._crypt_block(subkeys, self._iv)
-        self._iv = result
-        result = DES._xor(result, c)
-
-      plaintext += result
-
-    plaintext = DES._bit_array_to_bytes(result)
+    plaintext = DES._bit_array_to_bytes(plaintext)
 
     if self.mode == 'ECB' or self.mode == 'CBC':
       plaintext = DES._rem_padding(plaintext)
