@@ -15,11 +15,11 @@ ciphertext3 = b'\x94\x80\xf7\xbd@`\x05\xdb\xcc\n$ \x92|\xcb.\xaa\xd8y=\x9ex>\xfe
 
 from cui_des import DES
 
-# mydes = DES('ECB')
-# print(mydes.decrypt(ciphertext1, secret_key1))
+mydes = DES('ECB')
+print(mydes.decrypt(ciphertext1, secret_key1))
 
-# mydes = DES('CBC', initvector2)
-# print(mydes.decrypt(ciphertext2, secret_key2))
+mydes = DES('CBC', initvector2)
+print(mydes.decrypt(ciphertext2, secret_key2))
 
 mydes = DES('OFB', initvector3)
 print(mydes.decrypt(ciphertext3, secret_key3))

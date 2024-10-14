@@ -149,6 +149,7 @@ class lmh_cracker:
 p1 = b"\xCE\x23\x90\xAA\x22\x35\x60\xBB\xE9\x17\xF8\xD6\xFA\x47\x2D\x2C"
 p2 = b"D3CC6BB953241B61EFB303C2F126705E"
 p3 = b"6F3989F97ADB6701C2676C7231D0B1B5"
+
 testp = b'password'
 
 lmhc = lmh_cracker()
@@ -164,29 +165,18 @@ def crack(pswd: str):
     pswd = pswd + b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     l = pswd[0:7]
     r = pswd[7:14]
-    print(len(l), len(r))
     l = addparity(l)
     r = addparity(r)
     
     l_encrypt = des.encrypt(lm_const, l)
     r_encrypt = des.encrypt(lm_const, r)
-    print(len(l_encrypt))
-    return l_encrypt
     return l_encrypt + r_encrypt
 
 def addparity(p: bytes) -> bytes:
     p = DES._bytes_to_bit_array(p)
     p_array = [c for c in DES._nsplit(p, 7)]
     for element in p_array:
-        if element.count(1) % 2 == 0:
-            element += [1]
-        else:
-            element += [0]
-
-    t = 0
-    for e in p_array:
-        t += len(e)
-    print(t)
+        element += [0]
 
     return b''.join([DES._bit_array_to_bytes(p) for p in p_array])
 
