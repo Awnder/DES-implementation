@@ -131,6 +131,8 @@ subkey_result = [ [0,1,1,0,1,1,1,1,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,1,
                   [1,0,0,1,1,0,1,1,0,1,0,1,0,0,1,1,1,1,1,0,0,1,0,1,
                    0,1,0,0,0,0,1,1,0,0,0,1,1,0,0,0,1,0,1,1,1,1,0,1] ]
 
+from typing import Generator
+
 class DES:
   def __init__(self, mode='ECB', iv='\x00\x00\x00\x00\x00\x00\x00\x00'):
     self.mode = mode
@@ -143,7 +145,7 @@ class DES:
   def resetIV(self):
     self._iv = self.iv
 
-  def encrypt(self, data, key):
+  def encrypt(self, data: bytes, key: bytes) -> bytes:
     """ Encrypts plaintext data with DES (Data Encryption Standard).
 
         Parameters:
@@ -183,7 +185,7 @@ class DES:
 
     return ciphertext
         
-  def decrypt(self, data, key):
+  def decrypt(self, data: bytes, key: bytes) -> bytes:
     """ Decrypts ciphertext data with DES (Data Encryption Standard).
 
         Parameters:
@@ -226,7 +228,7 @@ class DES:
 
     return plaintext
 
-  def _crypt_block(block: list, subkeys: list):
+  def _crypt_block(block: list, subkeys: list) -> bytes:
     ''' block: list - 64 bits, subkeys: list of 16 bit lists 
         encrypts one block of 64 bit text
     '''
@@ -250,7 +252,7 @@ class DES:
     return block
 
   @staticmethod
-  def _add_padding(message):
+  def _add_padding(message: str) -> list:
     ''' Returns the message with extra padding (ie: 2 bytes w padding -> \x02\x02).
         used tallman's code
     '''
@@ -258,13 +260,13 @@ class DES:
     return message + (chr(pad_length) * pad_length).encode("utf-8")
 
   @staticmethod
-  def _rem_padding(message):
+  def _rem_padding(message: bytes) -> bytes:
     ''' Returns the message and removes extra padding '''
     last = message[-1]
     return (message[:-last])
 
   @staticmethod
-  def _bytes_to_bit_array(byte_string):
+  def _bytes_to_bit_array(byte_string: bytes) -> list:
     ''' converts a byte string to bit array. used tallman's code '''
     result = []
     for byte in byte_string:
@@ -277,7 +279,7 @@ class DES:
     return result
 
   @staticmethod
-  def _bit_array_to_bytes(bit_array):
+  def _bit_array_to_bytes(bit_array: list) -> bytes:
     ''' converts bit array to a byte string. used tallman's code and edited using gpt-4o as bit length was off '''
     result = []
     byte = 0
@@ -293,8 +295,8 @@ class DES:
     return bytes(result)
 
   @staticmethod
-  def _nsplit(data, split_size=64):
-    ''' Splits data into a list where each len(element) == split_size.
+  def _nsplit(data: list, split_size: int=64) -> Generator[bytes, None, None]:
+    ''' Splits data (list of bits) into a list where each len(element) == split_size.
         The last element does not necessarily have the max amount of characters 
     '''
     for i in range(0, len(data), split_size):
@@ -309,7 +311,7 @@ class DES:
     print(hex(binary)[2:].zfill(length)) #pad length
 
   @staticmethod
-  def _generate_subkeys(key: bytes):
+  def _generate_subkeys(key: bytes) -> list:
     ''' Generates 16 subkeys from a 64 bit key. Used gpt-4o to write '''
     key = DES._bytes_to_bit_array(key)
     
@@ -331,7 +333,7 @@ class DES:
     return subkeys
 
   @staticmethod
-  def _substitute(bit_array:list):
+  def _substitute(bit_array: list) -> list:
     ''' substitutes key with subkey boxes '''
     result = []
     for i in range(0, len(bit_array), 6):
@@ -350,22 +352,21 @@ class DES:
     return result
 
   @staticmethod
-  def _permute(block: list, table: list):
+  def _permute(block: list, table: list) -> list:
     return [block[i] for i in table]
 
   @staticmethod
-  def _lshift(sequence: list, n: int):
+  def _lshift(sequence: list, n: int) -> list:
     sequence = sequence[n:] + sequence[:n]
     return sequence
 
   @staticmethod
-  def _xor(x: list, y: list):
+  def _xor(x: list, y: list) -> list:
     return [a^b for a,b in zip(x,y)]
 
   @staticmethod
-  def _func_f(R: list, subkey: list):
+  def _func_f(R: list, subkey: list) -> list:
     ''' R: list - 32 bits, subkey: list - 48 bits. Wraps DES together for the 16 loops '''
-    # called _func_f in class. will change to _function if necessary, but _function seems ambiguous
     temp = DES._permute(R,_EXPAND)
     temp = DES._xor(temp, subkey)
     temp = DES._substitute(temp)
