@@ -135,12 +135,12 @@ from typing import Generator
 
 class DES:
   def __init__(self, mode='ECB', iv='\x00\x00\x00\x00\x00\x00\x00\x00'):
+    ''' mode can be ECB, CBC, or OFB 
+        iv must be 8 hex in length
+    '''
     self.mode = mode
     self.iv = iv
     self._iv = iv
-
-  # decrypt function has to give subkeys in reverse order and will not add padding at the beginning of the algorithm
-  # it will remove padding at the end tho
 
   def resetIV(self):
     self._iv = self.iv
@@ -155,33 +155,33 @@ class DES:
         Returns:
           An encrypted byte string of equal length to the original data, encrypted by specific DES mode
     """
-    subkeys = DES._generate_subkeys(key)
+    subkeys = DESCore._generate_subkeys(key)
 
     plaintext = data
     if self.mode == 'ECB' or self.mode == 'CBC':
-      plaintext = DES._add_padding(data)
+      plaintext = DESCore._add_padding(data)
 
-    plaintext = DES._bytes_to_bit_array(plaintext)
+    plaintext = DESCore._bytes_to_bit_array(plaintext)
 
     ciphertext = []
-    for p in DES._nsplit(plaintext, 64):
+    for p in DESCore._nsplit(plaintext, 64):
       if self.mode == 'ECB':
-        result = DES._crypt_block(p, subkeys)
+        result = DESCore._crypt_block(p, subkeys)
         ciphertext += result
 
       if self.mode == 'CBC':
-        p = DES._xor(p, self._iv)
-        result = DES._crypt_block(p, subkeys)
+        p = DESCore._xor(p, self._iv)
+        result = DESCore._crypt_block(p, subkeys)
         self._iv = result
         ciphertext += result
 
       if self.mode == 'OFB':
-        result = DES._crypt_block(self._iv, subkeys)
+        result = DESCore._crypt_block(self._iv, subkeys)
         self._iv = result
-        ciphertext += DES._xor(p, result)
+        ciphertext += DESCore._xor(p, result)
 
 
-    ciphertext = DES._bit_array_to_bytes(ciphertext)
+    ciphertext = DESCore._bit_array_to_bytes(ciphertext)
 
     return ciphertext
         
@@ -196,62 +196,158 @@ class DES:
           An decrypted byte string of equal length to the original data, decrypted by specific DES mode
     """
     if self.mode == 'ECB' or self.mode == 'CBC':
-      subkeys = list(reversed(DES._generate_subkeys(key)))
+      subkeys = list(reversed(DESCore._generate_subkeys(key)))
     else:
-      subkeys = DES._generate_subkeys(key)
+      subkeys = DESCore._generate_subkeys(key)
 
     if self.mode == 'OFB': # b/c using _iv in crypt, need to be a bit list
-      self._iv = DES._bytes_to_bit_array(self._iv) 
+      self._iv = DESCore._bytes_to_bit_array(self._iv) 
 
-    ciphertext = DES._bytes_to_bit_array(data)
+    ciphertext = DESCore._bytes_to_bit_array(data)
 
     plaintext = []
-    for c in DES._nsplit(ciphertext, 64):
+    for c in DESCore._nsplit(ciphertext, 64):
       if self.mode == 'ECB':
-        result = DES._crypt_block(c, subkeys)
+        result = DESCore._crypt_block(c, subkeys)
         plaintext += result
 
       if self.mode == 'CBC':
-        result = DES._crypt_block(c, subkeys)
-        plaintext += DES._xor(self._iv, result)
+        result = DESCore._crypt_block(c, subkeys)
+        plaintext += DESCore._xor(self._iv, result)
         self._iv = c
 
       if self.mode == 'OFB':
-        result = DES._crypt_block(self._iv, subkeys)
+        result = DESCore._crypt_block(self._iv, subkeys)
         self._iv = result
-        plaintext += DES._xor(c, result)
+        plaintext += DESCore._xor(c, result)
 
-    plaintext = DES._bit_array_to_bytes(plaintext)
+    plaintext = DESCore._bit_array_to_bytes(plaintext)
 
     if self.mode == 'ECB' or self.mode == 'CBC':
-      plaintext = DES._rem_padding(plaintext)
+      plaintext = DESCore._rem_padding(plaintext)
 
     return plaintext
 
+class TDES:
+  def __init__(self, mode='ECB', iv='\x00\x00\x00\x00\x00\x00\x00\x00'):
+    ''' mode can be ECB, CBC, or OFB. iv must be 8 hex in length '''
+    self.mode = mode
+    self.iv = iv
+    self._iv = iv
+
+  def resetIV(self):
+    self._iv = self.iv
+
+  def encrypt(self, data: bytes, key: bytes) -> bytes:
+    """ Encrypts plaintext data with DES (Data Encryption Standard).
+
+        Parameters:
+          data (bytes): input data to be encrypted
+          key (bytes):  192-bit key used for DES encryption
+
+        Returns:
+          An encrypted byte string of equal length to the original data, encrypted by specific DES mode
+    """
+    subkeys1 = DESCore._generate_subkeys(key1)
+    subkeys2 = list(reversed(DESCore._generate_subkeys(key2)))
+    subkeys3 = DESCore._generate_subkeys(key3)
+
+    plaintext = data
+    if self.mode == 'ECB' or self.mode == 'CBC':
+      plaintext = DESCore._add_padding(data)
+
+    plaintext = DESCore._bytes_to_bit_array(plaintext)
+
+    ciphertext = []
+    for p in DESCore._nsplit(plaintext, 64):
+      if self.mode == 'ECB':
+        result = DESCore._crypt_block(p, subkeys)
+        result = DESCore._crypt_block(result, subkeys)
+        ciphertext += result
+
+      if self.mode == 'CBC':
+        p = DESCore._xor(p, self._iv)
+        result = DESCore._crypt_block(p, subkeys)
+        self._iv = result
+        ciphertext += result
+
+      if self.mode == 'OFB':
+        result = DESCore._crypt_block(self._iv, subkeys)
+        self._iv = result
+        ciphertext += DESCore._xor(p, result)
+
+
+    ciphertext = DESCore._bit_array_to_bytes(ciphertext)
+
+    return ciphertext
+        
+  def decrypt(self, data: bytes, key: bytes) -> bytes:
+    """ Decrypts ciphertext data with DES (Data Encryption Standard).
+
+        Parameters:
+          data (bytes): input data to be decrypted
+          key (bytes):  64-bit key used for DES decryption
+
+        Returns:
+          An decrypted byte string of equal length to the original data, decrypted by specific DES mode
+    """
+    if self.mode == 'ECB' or self.mode == 'CBC':
+      subkeys = list(reversed(DESCore._generate_subkeys(key)))
+    else:
+      subkeys = DESCore._generate_subkeys(key)
+
+    if self.mode == 'OFB': # b/c using _iv in crypt, need to be a bit list
+      self._iv = DESCore._bytes_to_bit_array(self._iv) 
+
+    ciphertext = DESCore._bytes_to_bit_array(data)
+
+    plaintext = []
+    for c in DESCore._nsplit(ciphertext, 64):
+      if self.mode == 'ECB':
+        result = DESCore._crypt_block(c, subkeys)
+        plaintext += result
+
+      if self.mode == 'CBC':
+        result = DESCore._crypt_block(c, subkeys)
+        plaintext += DESCore._xor(self._iv, result)
+        self._iv = c
+
+      if self.mode == 'OFB':
+        result = DESCore._crypt_block(self._iv, subkeys)
+        self._iv = result
+        plaintext += DESCore._xor(c, result)
+
+    plaintext = DESCore._bit_array_to_bytes(plaintext)
+
+    if self.mode == 'ECB' or self.mode == 'CBC':
+      plaintext = DESCore._rem_padding(plaintext)
+
+    return plaintext
+
+class DESCore:
   def _crypt_block(block: list, subkeys: list) -> bytes:
     ''' block: list - 64 bits, subkeys: list of 16 bit lists 
         encrypts one block of 64 bit text
     '''
     # rewrote in class with prof tallman
-    block = DES._permute(block, _INIT_PERMUTATION)
+    block = DESCore._permute(block, _INIT_PERMUTATION)
 
     # split 64 bit block into 32 bit halves
     L = block[:32]
     R = block[32:]
     
     for i in range(16):
-      temp = DES._func_f(R, subkeys[i])
-      temp = DES._xor(temp, L)
+      temp = DESCore._func_f(R, subkeys[i])
+      temp = DESCore._xor(temp, L)
       # change L to R and R to modified R
       L = R
       R = temp
     
     # need to do one final swap of L and R for the algorithm
-    block = DES._permute(R+L, _FINAL_PERMUTATION)
+    block = DESCore._permute(R+L, _FINAL_PERMUTATION)
 
     return block
-
-  @staticmethod
+  
   def _add_padding(message: str) -> list:
     ''' Returns the message with extra padding (ie: 2 bytes w padding -> \x02\x02).
         used tallman's code
@@ -259,13 +355,11 @@ class DES:
     pad_length = 8 - len(message) % 8
     return message + (chr(pad_length) * pad_length).encode("utf-8")
 
-  @staticmethod
   def _rem_padding(message: bytes) -> bytes:
     ''' Returns the message and removes extra padding '''
     last = message[-1]
     return (message[:-last])
 
-  @staticmethod
   def _bytes_to_bit_array(byte_string: bytes) -> list:
     ''' converts a byte string to bit array. used tallman's code '''
     result = []
@@ -278,7 +372,6 @@ class DES:
               result.append(0)
     return result
 
-  @staticmethod
   def _bit_array_to_bytes(bit_array: list) -> bytes:
     ''' converts bit array to a byte string. used tallman's code and edited using gpt-4o as bit length was off '''
     result = []
@@ -294,7 +387,6 @@ class DES:
       result.append(byte)
     return bytes(result)
 
-  @staticmethod
   def _nsplit(data: list, split_size: int=64) -> Generator[bytes, None, None]:
     ''' Splits data (list of bits) into a list where each len(element) == split_size.
         The last element does not necessarily have the max amount of characters 
@@ -303,31 +395,29 @@ class DES:
       stop = i+split_size
       yield data[i:stop]
 
-  @staticmethod
   def _hex_print(block, length=16):
     ''' gets a list of binary digits and prints the hex representation, used tallman's code '''
     s = [str(i) for i in block]
     binary = int(''.join(s),2)
     print(hex(binary)[2:].zfill(length)) #pad length
 
-  @staticmethod
   def _generate_subkeys(key: bytes) -> list:
     ''' Generates 16 subkeys from a 64 bit key. Used gpt-4o to write '''
-    key = DES._bytes_to_bit_array(key)
+    key = DESCore._bytes_to_bit_array(key)
     
     # permutes 64 bit key into 56bits
-    permuted_key = DES._permute(key, _KEY_PERMUTATION1)
+    permuted_key = DESCore._permute(key, _KEY_PERMUTATION1)
     
     L = permuted_key[:28]
     R = permuted_key[28:]
     
     subkeys = []
     for shift in _KEY_SHIFT: # shifts to randomize new key
-        L = DES._lshift(L, shift)
-        R = DES._lshift(R, shift)
+        L = DESCore._lshift(L, shift)
+        R = DESCore._lshift(R, shift)
 
         # permutes 56 key into 48 bit subkeys
-        subkey = DES._permute(L+R, _KEY_PERMUTATION2)
+        subkey = DESCore._permute(L+R, _KEY_PERMUTATION2)
         subkeys.append(subkey)
     
     return subkeys
@@ -351,26 +441,22 @@ class DES:
       result += sub
     return result
 
-  @staticmethod
   def _permute(block: list, table: list) -> list:
     return [block[i] for i in table]
 
-  @staticmethod
   def _lshift(sequence: list, n: int) -> list:
     sequence = sequence[n:] + sequence[:n]
     return sequence
 
-  @staticmethod
   def _xor(x: list, y: list) -> list:
     return [a^b for a,b in zip(x,y)]
 
-  @staticmethod
   def _func_f(R: list, subkey: list) -> list:
     ''' R: list - 32 bits, subkey: list - 48 bits. Wraps DES together for the 16 loops '''
-    temp = DES._permute(R,_EXPAND)
-    temp = DES._xor(temp, subkey)
-    temp = DES._substitute(temp)
-    temp = DES._permute(temp, _SBOX_PERM)
+    temp = DESCore._permute(R,_EXPAND)
+    temp = DESCore._xor(temp, subkey)
+    temp = DESCore._substitute(temp)
+    temp = DESCore._permute(temp, _SBOX_PERM)
     return temp
 
 
@@ -380,54 +466,54 @@ def run_unit_tests():
         AssertionError if any single unit test fails. """
 
     try:
-      t_add1 = DES._add_padding(b'CSC428')
-      t_add2 = DES._add_padding(b'TALLMAN')
-      t_add3 = DES._add_padding(b'JTALLMAN')
-      t_rem1 = DES._rem_padding(b'CSC428\x02\x02')
-      t_rem2 = DES._rem_padding(b'TALLMAN\x01')
-      t_rem3 = DES._rem_padding(b'JTALLMAN\x08\x08\x08\x08\x08\x08\x08\x08')
-      t_btba1 = DES._bytes_to_bit_array(b'\x00')
-      t_btba2 = DES._bytes_to_bit_array(b'\xA5')
-      t_btba3 = DES._bytes_to_bit_array(b'\xFF')
-      t_batb1 = DES._bit_array_to_bytes([0,0,0,0,0,0,0,0])
-      t_batb2 = DES._bit_array_to_bytes([1,0,1,0,0,1,0,1])
-      t_batb3 = DES._bit_array_to_bytes([1,1,1,1,1,1,1,1])
-      t_nsplit1 = DES._nsplit(b'1111222233334444',4)
+      t_add1 = DESCore._add_padding(b'CSC428')
+      t_add2 = DESCore._add_padding(b'TALLMAN')
+      t_add3 = DESCore._add_padding(b'JTALLMAN')
+      t_rem1 = DESCore._rem_padding(b'CSC428\x02\x02')
+      t_rem2 = DESCore._rem_padding(b'TALLMAN\x01')
+      t_rem3 = DESCore._rem_padding(b'JTALLMAN\x08\x08\x08\x08\x08\x08\x08\x08')
+      t_btba1 = DESCore._bytes_to_bit_array(b'\x00')
+      t_btba2 = DESCore._bytes_to_bit_array(b'\xA5')
+      t_btba3 = DESCore._bytes_to_bit_array(b'\xFF')
+      t_batb1 = DESCore._bit_array_to_bytes([0,0,0,0,0,0,0,0])
+      t_batb2 = DESCore._bit_array_to_bytes([1,0,1,0,0,1,0,1])
+      t_batb3 = DESCore._bit_array_to_bytes([1,1,1,1,1,1,1,1])
+      t_nsplit1 = DESCore._nsplit(b'1111222233334444',4)
       t_nsplit1 = [t for t in t_nsplit1]
-      t_nsplit2 = DES._nsplit(b'ABCDEFGHIJKLMN', 3)
+      t_nsplit2 = DESCore._nsplit(b'ABCDEFGHIJKLMN', 3)
       t_nsplit2 = [t for t in t_nsplit2]
-      t_nsplit3 = DES._nsplit(b'THE CODE BOOK BY SINGH', 5)
+      t_nsplit3 = DESCore._nsplit(b'THE CODE BOOK BY SINGH', 5)
       t_nsplit3 = [t for t in t_nsplit3]
-      t_xor = DES._xor(b'1111', b'0101')
-      t_lshift = DES._lshift([1,0,1,1], 1)
-      t_subst = DES._substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
-      t_init_perm1 = DES._permute([
+      t_xor = DESCore._xor(b'1111', b'0101')
+      t_lshift = DESCore._lshift([1,0,1,1], 1)
+      t_subst = DESCore._substitute([1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,1,1,1,1,0,1,0,1,1,0,0,1,0,0])
+      t_init_perm1 = DESCore._permute([
         "y", "0", "u", "'", "v", "3", "i", "n", "t", "3", "r", "c", "3", "p", "t", "3",
         "d", "a", "s", "u", "s", "p", "i", "c", "i", "0", "u", "s", "c", "i", "p", "h",
         "3", "r", "f", "3", "x", "t", ",", "w", "h", "i", "c", "h", "y", "0", "u", "b",
         "3", "l", "i", "3", "v", "3", "t", "0", "h", "a", "v", "3", "b", "3", "3", "n"
       ], _INIT_PERMUTATION)
-      t_init_perm2 = DES._permute([
+      t_init_perm2 = DESCore._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", 'a', 'b', 'c', 'd', 'e', 'f',
         'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
         'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '@'
       ], _INIT_PERMUTATION)
-      t_final_perm = DES._permute([
+      t_final_perm = DESCore._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "5",
         "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l",
         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "!", "?", "*", ":", ")"
       ], _FINAL_PERMUTATION)
-      t_expand_perm = DES._permute([
+      t_expand_perm = DESCore._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2", "3", "4", "!"
       ], _EXPAND)
-      t_sbox_perm = DES._permute([
+      t_sbox_perm = DESCore._permute([
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
         "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "!", "1", "2", "3", "4", "5"
       ], _SBOX_PERM)
-      t_subkeys = DES._generate_subkeys(subkey_input)
+      t_subkeys = DESCore._generate_subkeys(subkey_input)
 
       assert t_add1 == b'CSC428\x02\x02', "failed add 1"
       assert t_add2 == b'TALLMAN\x01', 'failed add 2'
@@ -478,9 +564,9 @@ def run_unit_tests():
       ], 'failed sbox perm'
       assert t_subkeys == subkey_result, 'failed subkeys'
 
-      DES._hex_print([1,1,1,1,0,1,0,1,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,1,1,0,1,1,0,1,1]) # b'F50A96DB'
-      DES._hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) # b'ABCDFF00'
-      DES._hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) # b'12345678'
+      DESCore._hex_print([1,1,1,1,0,1,0,1,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,1,1,0,1,1,0,1,1]) # b'F50A96DB'
+      DESCore._hex_print([1,0,1,0,1,0,1,1,1,1,0,0,1,1,0,1,1,1,1,0,1,1,1,1,0,0,0,0,0,0,0,0]) # b'ABCDFF00'
+      DESCore._hex_print([0,0,0,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0]) # b'12345678'
 
     except:
       raise AssertionError

@@ -159,8 +159,7 @@ lmhc = lmh_cracker()
 
 def crack(pswd: str):
     cp_list = read_common_pswd('common_pswd.txt')
-    des = DES()
-    lm_const = "KGS!@#$%".encode()
+    lm_const = b"KGS!@#$%"
     pswd = pswd.upper().encode()
     pswd = pswd + b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     l = pswd[0:7]
@@ -168,9 +167,23 @@ def crack(pswd: str):
     l = addparity(l)
     r = addparity(r)
     
-    l_encrypt = des.encrypt(lm_const, l)
-    r_encrypt = des.encrypt(lm_const, r)
-    return l_encrypt + r_encrypt
+    l = crack_encrypt(lm_const, l)
+    r = crack_encrypt(lm_const, r)
+    return l + r
+
+def crack_encrypt(data: bytes, key: bytes) -> bytes:
+    ''' custom DES encryption method designed for cracking. removes padding for lmhash '''
+    subkeys = DES._generate_subkeys(key)
+    plaintext = DES._bytes_to_bit_array(data)
+
+    ciphertext = []
+    for p in DES._nsplit(plaintext, 64):
+        result = DES._crypt_block(p, subkeys)
+        ciphertext += result
+
+    ciphertext = DES._bit_array_to_bytes(ciphertext)
+
+    return ciphertext
 
 def addparity(p: bytes) -> bytes:
     p = DES._bytes_to_bit_array(p)
