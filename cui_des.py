@@ -133,7 +133,7 @@ subkey_result = [ [0,1,1,0,1,1,1,1,1,0,1,0,1,1,0,0,0,0,0,1,1,0,1,1,
 
 from typing import Generator
 
-class DES:
+class DESCore:
   def __init__(self, mode='ECB', iv='\x00\x00\x00\x00\x00\x00\x00\x00'):
     ''' mode can be ECB, CBC, or OFB 
         iv must be 8 hex in length

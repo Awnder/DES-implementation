@@ -1,4 +1,5 @@
-from cui_des import DES
+from cui_des import DESCore
+from cui_des import DESCore
 import time
 import string
 import itertools
@@ -10,7 +11,7 @@ class lmh_cracker:
         # lmh only uses uppercased letters and printable chars 
         self.ascii_chars = [b' ', b'!', b'"', b'#', b'$', b'%', b'&', b"'", b'(', b')', b'*', b'+', b',', b'-', b'.', b'/', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b':', b';', b'<', b'=', b'>', b'?', b'@', b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P', b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'[', b'\\', b']', b'^', b'_', b'`', b'{', b'|', b'}', b'~']
         self.alphanumerics = string.ascii_uppercase.encode(encoding='utf-8') + string.digits.encode(encoding='utf-8')
-        self.des = DES()
+        self.des = DESCore()
 
     def brute_force(self, hashed_pswd: bytes, filename: str) -> None:
         ''' brute forces (with a dictionary aid) one bytestring hashed passwords encrypted with LM Hash, with timed info
@@ -37,6 +38,7 @@ class lmh_cracker:
         #     result = self.des.encrypt(l,self.pt_key).upper()
         #     result = self.l_rem_x(result)
         #     print('final',result)
+
 
         for p in common_pswd:
             p = p + b'\00\00\00\00\00\00\00\00\00\00\00\00\00\00' # add 14 bits of padding, extraneous will be removed
@@ -128,22 +130,15 @@ class lmh_cracker:
 
     def l_addparity(self, pswd_half: bytes) -> bytes:
         ''' adds an even parity bit to the password '''
-        p = DES._bytes_to_bit_array(pswd_half)
-        pswd_list = [i for i in DES._nsplit(p, 7)]
+        p = DESCore._bytes_to_bit_array(pswd_half)
+        pswd_list = [i for i in DESCore._nsplit(p, 7)]
         for p in pswd_list:
             if p.count(1) % 2 == 0:
                 p += [0]
             else:
                 p += [1]
         
-        return b''.join([DES._bit_array_to_bytes(p) for p in pswd_list])
-    
-    def l_rem_x(self, pswd: bytes) -> bytes:
-        # pswd = pswd.split(b'\\x')
-        return pswd
-        return pswd.decode(encoding='utf-8')
-        return b''.join(pswd) # don't need b''.join() because the first element of the list has the 'b' notation
-    
+        return b''.join([DESCore._bit_array_to_bytes(p) for p in pswd_list])
 
 
 p1 = b"\xCE\x23\x90\xAA\x22\x35\x60\xBB\xE9\x17\xF8\xD6\xFA\x47\x2D\x2C"
@@ -156,6 +151,12 @@ lmhc = lmh_cracker()
 # lmhc.brute_force(p1, 'common_pswd.txt')
 # print(lmhc.l_rem_x(b'\x00\x13'))
 # print(lmhc.l_rem_x(lmhc.encrypt(testp)))
+
+
+# think of stopwatching it when found a word
+# 'pad' with numbers at the end of the dict word for tallman's
+# use a while loop to count up starting at 0, maybe set a max of around 5 digits in total
+# for bozo, repeat above but with common character replacements
 
 def crack(pswd: str):
     cp_list = read_common_pswd('common_pswd.txt')
@@ -173,25 +174,22 @@ def crack(pswd: str):
 
 def crack_encrypt(data: bytes, key: bytes) -> bytes:
     ''' custom DES encryption method designed for cracking. removes padding for lmhash '''
-    subkeys = DES._generate_subkeys(key)
-    plaintext = DES._bytes_to_bit_array(data)
+    subkeys = DESCore._generate_subkeys(key)
+    plaintext = DESCore._bytes_to_bit_array(data)
 
-    ciphertext = []
-    for p in DES._nsplit(plaintext, 64):
-        result = DES._crypt_block(p, subkeys)
-        ciphertext += result
+    ciphertext = DESCore._crypt_block(plaintext, subkeys)
 
-    ciphertext = DES._bit_array_to_bytes(ciphertext)
+    ciphertext = DESCore._bit_array_to_bytes(ciphertext)
 
     return ciphertext
 
 def addparity(p: bytes) -> bytes:
-    p = DES._bytes_to_bit_array(p)
-    p_array = [c for c in DES._nsplit(p, 7)]
+    p = DESCore._bytes_to_bit_array(p)
+    p_array = [c for c in DESCore._nsplit(p, 7)]
     for element in p_array:
         element += [0]
 
-    return b''.join([DES._bit_array_to_bytes(p) for p in p_array])
+    return b''.join([DESCore._bit_array_to_bytes(p) for p in p_array])
 
 def read_common_pswd(filename: str) -> list:
     if filename == None:
@@ -204,4 +202,5 @@ def read_common_pswd(filename: str) -> list:
     return cp
 
 test = crack('password')
-print(test)
+
+print(test.hex())
