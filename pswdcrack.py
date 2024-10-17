@@ -75,5 +75,14 @@ def read_common_pswd(filename: str) -> list:
 # tallman:1002:D3CC6BB953241B61EFB303C2F126705E:8C219140EF269E446F982AD0FD989AC1:::
 # zerocool:500:6F3989F97ADB6701C2676C7231D0B1B5:4BCA5C033CC8A87FF18696E7F35DE514:::
 
+# consider plurals
+# consider words that are plurals and get rid of the s
+# consider 123 
+# consdier plural and 123
+# consider itertools to get special characters and iteratively replace them
+
 pswd = pswdcrack('CE2390AA223560BBE917F8D6FA472D2C')
 print(pswd)
+
+# pswd = crack(b'password')
+# print(pswd.hex().upper())
