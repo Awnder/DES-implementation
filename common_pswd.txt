@@ -1,5 +1,3 @@
-armadillo
-armadillos
 aaaa
 aaaaa
 aaaaaa

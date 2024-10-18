@@ -13,21 +13,31 @@ def pswdcrack(desired_pswd: str):
     start = time.time()
     for pswd in cp_list:
         num = 0
+
+        # test singular`
         temp_pswd = pswd
-        pswd_encrypted = crack(temp_pswd).hex().upper()
-        print(pswd_encrypted)
-        if pswd_encrypted == desired_pswd:
-            return [pswd_encrypted, time.time() - start]
-        # while num < 2: # test all numbers up to 99999
-        #     pswd_encrypted = crack(temp_pswd).hex().upper()
-        #     temp_pswd = pswd + str(num).encode()
-        #     print(num, pswd_encrypted)
-        #     num += 1
-        #     if pswd_encrypted in desired_pswd:
-        #         found += 1
-        #         fpswds.append([pswd_encrypted, time.time() - start])
-        #     if found == len(desired_pswd):
-        #         return fpswds
+        if temp_pswd == b's':
+             temp_pswd = temp_pswd[0:-1]
+        pswd_encrypt = crack(temp_pswd).hex().upper()
+        if pswd_encrypt == desired_pswd:
+            return [temp_pswd, time.time() - start]
+        
+        # test plural
+        temp_pswd = pswd
+        if temp_pswd[-1] != b's':
+            temp_pswd = temp_pswd[0:-1]
+        pswd_encrypt = crack(temp_pswd).hex().upper()
+        if pswd_encrypt == desired_pswd:
+            return [temp_pswd, time.time() - start] 
+
+        # test numbers
+        while num < 1000: # check up to 999
+            temp_pswd = pswd
+            temp_pswd += str(num).encode()
+            pswd_encrypt = crack(temp_pswd).hex().upper()
+            if pswd_encrypt == desired_pswd:
+                return [temp_pswd, time.time() - start] 
+            num += 1
 
 def crack(pswd: bytes):
     lm_const = b"KGS!@#$%"
@@ -81,7 +91,7 @@ def read_common_pswd(filename: str) -> list:
 # consdier plural and 123
 # consider itertools to get special characters and iteratively replace them
 
-pswd = pswdcrack('CE2390AA223560BBE917F8D6FA472D2C')
+pswd = pswdcrack('D3CC6BB953241B61EFB303C2F126705E')
 print(pswd)
 
 # pswd = crack(b'password')
