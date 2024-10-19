@@ -9,6 +9,7 @@ import string
 
 def pswdcrack(desired_pswd: str):
     cp_list = read_common_pswd('common_pswd.txt')
+    common_numbers = [b'123', b'1234', b'0000']
     
     start = time.time()
     for pswd in cp_list:
@@ -17,27 +18,37 @@ def pswdcrack(desired_pswd: str):
         # test singular`
         temp_pswd = pswd
         if temp_pswd == b's':
-             temp_pswd = temp_pswd[0:-1]
-        pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt == desired_pswd:
-            return [temp_pswd, time.time() - start]
-        
+            temp_pswd = temp_pswd[0:-1]
+            pswd_encrypt = crack(temp_pswd).hex().upper()
+            if pswd_encrypt == desired_pswd:
+                return [temp_pswd, time.time() - start]
+            
+            # test numbers
+            while num < 1000: # check up to 999
+                temp_pswd = pswd
+                temp_pswd += str(num).encode()
+                pswd_encrypt = crack(temp_pswd).hex().upper()
+                if pswd_encrypt == desired_pswd:
+                    return [temp_pswd, time.time() - start] 
+                num += 1
+
         # test plural
         temp_pswd = pswd
         if temp_pswd[-1] != b's':
             temp_pswd = temp_pswd[0:-1]
-        pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt == desired_pswd:
-            return [temp_pswd, time.time() - start] 
-
-        # test numbers
-        while num < 1000: # check up to 999
-            temp_pswd = pswd
-            temp_pswd += str(num).encode()
             pswd_encrypt = crack(temp_pswd).hex().upper()
             if pswd_encrypt == desired_pswd:
                 return [temp_pswd, time.time() - start] 
-            num += 1
+            
+            # test numbers
+            while num < 1000: # check up to 999
+                temp_pswd = pswd
+                temp_pswd += str(num).encode()
+                pswd_encrypt = crack(temp_pswd).hex().upper()
+                if pswd_encrypt == desired_pswd:
+                    return [temp_pswd, time.time() - start] 
+                num += 1
+        
 
 def crack(pswd: bytes):
     lm_const = b"KGS!@#$%"
