@@ -9,52 +9,64 @@ import string
 
 def pswdcrack(desired_pswd: str):
     cp_list = read_common_pswd('common_pswd.txt')
+    dpswd_list = []
     
     start = time.time()
     for pswd in cp_list:
         num = 0
+
+        # testing just left
+        
+        # test normally
+        temp_pswd = pswd
+        pswd_encrypt = crack(temp_pswd).hex().upper()
+        if pswd_encrypt == desired_pswd[0:len(desired_pswd//2)]:
+            dpswd_list.append([temp_pswd, time.time() - start]) 
 
         # test singular`
         temp_pswd = pswd
         if temp_pswd == b's':
              temp_pswd = temp_pswd[0:-1]
         pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt == desired_pswd:
-            return [temp_pswd, time.time() - start]
+        if pswd_encrypt == desired_pswd[0:len(desired_pswd//2)]:
+            dpswd_list.append([temp_pswd, time.time() - start])
         
         # test plural
         temp_pswd = pswd
         if temp_pswd[-1] != b's':
-            temp_pswd = temp_pswd[0:-1]
+            temp_pswd = temp_pswd + b's'
         pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt == desired_pswd:
-            return [temp_pswd, time.time() - start] 
-
-        # test numbers
-        while num < 1000: # check up to 999
-            temp_pswd = pswd
-            temp_pswd += str(num).encode()
-            pswd_encrypt = crack(temp_pswd).hex().upper()
-            if pswd_encrypt == desired_pswd:
-                return [temp_pswd, time.time() - start] 
-            num += 1
+        if pswd_encrypt == desired_pswd[0:len(desired_pswd//2)]:
+            dpswd_list.append([temp_pswd, time.time() - start])
+         
+        # # test numbers
+        # while num < 100: # check up to 999
+        #     temp_pswd = pswd
+        #     temp_pswd += str(num).encode()
+        #     pswd_encrypt = crack(temp_pswd).hex().upper()
+        #     print(pswd_encrypt)
+        #     if pswd_encrypt == desired_pswd:
+        #         return [temp_pswd, time.time() - start] 
+        #     num += 1
+        return dpswd_list
 
 def crack(pswd: bytes):
     lm_const = b"KGS!@#$%"
     pswd = pswd.upper()
     pswd = pswd + b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     l = pswd[0:7]
-    r = pswd[7:14]
+    # r = pswd[7:14]
     l = addparity(l)
-    r = addparity(r)
+    # r = addparity(r)
     l = crack_encrypt(lm_const, l)
-    r = crack_encrypt(lm_const, r)
-    return l + r
+    # r = crack_encrypt(lm_const, r)
+    return l
+    # return l + r
 
-def crack_encrypt(data: bytes, key: bytes) -> bytes:
+def crack_encrypt(lm_const: bytes, side: bytes) -> bytes:
     ''' custom DES encryption method designed for cracking. removes padding for lmhash '''
-    subkeys = cui_des._generate_subkeys(key)
-    plaintext = cui_des._bytes_to_bit_array(data)
+    subkeys = cui_des._generate_subkeys(side)
+    plaintext = cui_des._bytes_to_bit_array(lm_const)
 
     ciphertext = cui_des._crypt_block(plaintext, subkeys)
 
@@ -92,7 +104,9 @@ def read_common_pswd(filename: str) -> list:
 # consider itertools to get special characters and iteratively replace them
 
 pswd = pswdcrack('D3CC6BB953241B61EFB303C2F126705E')
-print(pswd)
+# print(pswd)
+for p in pswd:
+    print(p)
 
 # pswd = crack(b'password')
 # print(pswd.hex().upper())
