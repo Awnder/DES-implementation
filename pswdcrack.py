@@ -16,11 +16,11 @@ def pswdcrack(desired_pswd: str):
         num = 0
 
         # testing just left
-        
+
         # test normally
         temp_pswd = pswd
         pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt == desired_pswd[0:len(desired_pswd//2)]:
+        if pswd_encrypt in desired_pswd:
             dpswd_list.append([temp_pswd, time.time() - start]) 
 
         # test singular`
@@ -28,7 +28,7 @@ def pswdcrack(desired_pswd: str):
         if temp_pswd == b's':
              temp_pswd = temp_pswd[0:-1]
         pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt == desired_pswd[0:len(desired_pswd//2)]:
+        if pswd_encrypt in desired_pswd:
             dpswd_list.append([temp_pswd, time.time() - start])
         
         # test plural
@@ -36,7 +36,7 @@ def pswdcrack(desired_pswd: str):
         if temp_pswd[-1] != b's':
             temp_pswd = temp_pswd + b's'
         pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt == desired_pswd[0:len(desired_pswd//2)]:
+        if pswd_encrypt in desired_pswd:
             dpswd_list.append([temp_pswd, time.time() - start])
          
         # # test numbers
@@ -48,7 +48,6 @@ def pswdcrack(desired_pswd: str):
         #     if pswd_encrypt == desired_pswd:
         #         return [temp_pswd, time.time() - start] 
         #     num += 1
-        return dpswd_list
 
 def crack(pswd: bytes):
     lm_const = b"KGS!@#$%"
