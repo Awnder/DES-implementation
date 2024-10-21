@@ -8,59 +8,53 @@ import string
 # for zerocool, repeat above but with common character replacements
 
 def pswdcrack(desired_pswd: str):
-    cp_list = read_common_pswd('common_pswd.txt')
-    dpswd_list = []
+    cp_list = read_common_pswd('common_pswd.txt')    
+    start = time.perf_counter()
+    cp_nums = [b'0',b'1',b'2',b'3',b'4',b'5',b'01',b'012',b'0123',b'01234',b'12',b'123',b'1234',b'00',b'11',b'22',b'33',b'44',b'55',b'12345',b'123456']
     
-    start = time.time()
     for pswd in cp_list:
         num = 0
 
-        # testing just left
-
-        # test normally
         temp_pswd = pswd
         pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt in desired_pswd:
-            dpswd_list.append([temp_pswd, time.time() - start]) 
+        print(pswd_encrypt)
+        if pswd_encrypt == desired_pswd:
+            return [temp_pswd, time.time() - start]
+        for cpn in cp_nums:
+            temp_pswd = pswd + cpn
+            pswd_encrypt = crack(temp_pswd).hex().upper()
+            print(pswd_encrypt)
+            if pswd_encrypt == desired_pswd:
+              return [temp_pswd, time.timedelta(seconds=time.perf_counter()-start)]
 
         # test singular`
-        temp_pswd = pswd
-        if temp_pswd == b's':
-             temp_pswd = temp_pswd[0:-1]
-        pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt in desired_pswd:
-            dpswd_list.append([temp_pswd, time.time() - start])
-        
-        # test plural
-        temp_pswd = pswd
-        if temp_pswd[-1] != b's':
-            temp_pswd = temp_pswd + b's'
-        pswd_encrypt = crack(temp_pswd).hex().upper()
-        if pswd_encrypt in desired_pswd:
-            dpswd_list.append([temp_pswd, time.time() - start])
-         
-        # # test numbers
-        # while num < 100: # check up to 999
-        #     temp_pswd = pswd
-        #     temp_pswd += str(num).encode()
+        # temp_pswd = pswd
+        # if temp_pswd == b's':
+        #     temp_pswd = temp_pswd[0:-1]
         #     pswd_encrypt = crack(temp_pswd).hex().upper()
-        #     print(pswd_encrypt)
-        #     if pswd_encrypt == desired_pswd:
-        #         return [temp_pswd, time.time() - start] 
-        #     num += 1
+        #     if pswd_encrypt in desired_pswd:
+        #         return [temp_pswd, time.time() - start]
+            
+        # # test plural
+        # temp_pswd = pswd
+        # if temp_pswd[-1] != b's':
+        #     temp_pswd = temp_pswd + b's'
+        #     pswd_encrypt = crack(temp_pswd).hex().upper()
+        #     if pswd_encrypt in desired_pswd:
+        #         return [temp_pswd, time.time() - start]
+
 
 def crack(pswd: bytes):
     lm_const = b"KGS!@#$%"
     pswd = pswd.upper()
     pswd = pswd + b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
     l = pswd[0:7]
-    # r = pswd[7:14]
+    r = pswd[7:14]
     l = addparity(l)
-    # r = addparity(r)
+    r = addparity(r)
     l = crack_encrypt(lm_const, l)
-    # r = crack_encrypt(lm_const, r)
-    return l
-    # return l + r
+    r = crack_encrypt(lm_const, r)
+    return l + r
 
 def crack_encrypt(lm_const: bytes, side: bytes) -> bytes:
     ''' custom DES encryption method designed for cracking. removes padding for lmhash '''
@@ -96,16 +90,5 @@ def read_common_pswd(filename: str) -> list:
 # tallman:1002:D3CC6BB953241B61EFB303C2F126705E:8C219140EF269E446F982AD0FD989AC1:::
 # zerocool:500:6F3989F97ADB6701C2676C7231D0B1B5:4BCA5C033CC8A87FF18696E7F35DE514:::
 
-# consider plurals
-# consider words that are plurals and get rid of the s
-# consider 123 
-# consdier plural and 123
-# consider itertools to get special characters and iteratively replace them
-
 pswd = pswdcrack('D3CC6BB953241B61EFB303C2F126705E')
-# print(pswd)
-for p in pswd:
-    print(p)
-
-# pswd = crack(b'password')
-# print(pswd.hex().upper())
+print(pswd)
