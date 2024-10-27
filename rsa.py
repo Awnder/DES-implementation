@@ -11,7 +11,6 @@ import hashlib
 # find two primes p&q whose prod is N - look at sieve of eratothenes
 # digital signature and verification
 
-
 def generate_random_primes(max_value: int=1000000) -> tuple:
     ''' returns two static primes, will eventually implement random '''
     return (436673, 807707)
